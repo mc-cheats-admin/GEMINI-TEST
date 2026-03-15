@@ -12,6 +12,7 @@ class ScrollEngineClass {
     this.handleTouchStart = this.handleTouchStart.bind(this);
     this.handleTouchMove = this.handleTouchMove.bind(this);
     this.handleResize = this.handleResize.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
     this.update = this.update.bind(this);
   }
 
@@ -21,13 +22,13 @@ class ScrollEngineClass {
     this.setupResizeObserver();
     this.handleResize();
     this.lastTime = performance.now();
-    // this.start();
   }
 
   private setupEventListeners() {
     window.addEventListener('wheel', this.handleWheel, { passive: false });
     window.addEventListener('touchstart', this.handleTouchStart, { passive: false });
     window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+    window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -59,6 +60,38 @@ class ScrollEngineClass {
     state.scroll.target += delta * 2;
     state.scroll.target = Math.max(0, Math.min(state.scroll.target, state.scroll.limit));
     this.touchStartY = touchY;
+  }
+
+  private handleKeyDown(e: KeyboardEvent) {
+    const step = 100;
+    const pageStep = window.innerHeight * 0.8;
+    
+    switch(e.key) {
+      case 'ArrowUp':
+        state.scroll.target -= step;
+        break;
+      case 'ArrowDown':
+        state.scroll.target += step;
+        break;
+      case 'PageUp':
+        state.scroll.target -= pageStep;
+        break;
+      case 'PageDown':
+        state.scroll.target += pageStep;
+        break;
+      case 'Home':
+        state.scroll.target = 0;
+        break;
+      case 'End':
+        state.scroll.target = state.scroll.limit;
+        break;
+      case ' ':
+        state.scroll.target += e.shiftKey ? -pageStep : pageStep;
+        break;
+      default:
+        return;
+    }
+    state.scroll.target = Math.max(0, Math.min(state.scroll.target, state.scroll.limit));
   }
 
   private handleResize() {
@@ -107,6 +140,7 @@ class ScrollEngineClass {
     window.removeEventListener('wheel', this.handleWheel);
     window.removeEventListener('touchstart', this.handleTouchStart);
     window.removeEventListener('touchmove', this.handleTouchMove);
+    window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('resize', this.handleResize);
     
     if (this.resizeObserver) {

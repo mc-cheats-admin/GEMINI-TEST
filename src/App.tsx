@@ -19,6 +19,7 @@ import { VelocityMarquee } from './components/VelocityMarquee';
 import { DataGlobe } from './components/DataGlobe';
 import { LiquidPricing } from './components/LiquidPricing';
 import { LiveFAQ } from './components/LiveFAQ';
+import { BackToTop } from './components/BackToTop';
 
 export default function App() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,7 @@ export default function App() {
       <HUD />
       <ScrollProgressBar />
       <CustomContextMenu />
+      <BackToTop />
       
       <svg className="gooey-filter">
         <defs>
