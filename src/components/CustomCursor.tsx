@@ -1,67 +1,122 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export const CustomCursor = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [hovered, setHovered] = useState(false);
-  const [clicked, setClicked] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
+  const [isHovering, setIsHovering] = useState(false);
   const [isText, setIsText] = useState(false);
+  const [isView, setIsView] = useState(false);
+
+  // Use refs for positions to avoid re-renders
+  const mousePos = useRef({ x: 0, y: 0 });
+  const cursorPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) return;
+    // Hide default cursor
+    document.body.style.cursor = 'none';
 
-    const onMouseMove = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
-      const target = e.target as HTMLElement;
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePos.current = { x: e.clientX, y: e.clientY };
       
-      const isClickable = target.tagName.toLowerCase() === 'a' || 
-                          target.tagName.toLowerCase() === 'button' || 
-                          target.closest('a') || 
-                          target.closest('button');
-      
-      const isTextNode = target.tagName.toLowerCase() === 'p' || 
-                         target.tagName.toLowerCase() === 'h1' || 
-                         target.tagName.toLowerCase() === 'h2' || 
-                         target.tagName.toLowerCase() === 'h3' || 
-                         target.tagName.toLowerCase() === 'span';
-
-      setHovered(!!isClickable);
-      setIsText(!!isTextNode && !isClickable);
+      // Update dot immediately
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+      }
     };
 
-    const onMouseDown = () => setClicked(true);
-    const onMouseUp = () => setClicked(false);
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Check for view mode (gallery items)
+      if (target.closest('.gallery-item')) {
+        setIsView(true);
+        setIsHovering(false);
+        setIsText(false);
+        return;
+      }
+      setIsView(false);
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
+      if (
+        target.tagName.toLowerCase() === 'a' ||
+        target.tagName.toLowerCase() === 'button' ||
+        target.closest('a') ||
+        target.closest('button') ||
+        target.classList.contains('interactive')
+      ) {
+        setIsHovering(true);
+        setIsText(false);
+      } else if (
+        target.tagName.toLowerCase() === 'p' ||
+        target.tagName.toLowerCase() === 'h1' ||
+        target.tagName.toLowerCase() === 'h2' ||
+        target.tagName.toLowerCase() === 'h3' ||
+        target.tagName.toLowerCase() === 'span'
+      ) {
+        setIsText(true);
+        setIsHovering(false);
+      } else {
+        setIsHovering(false);
+        setIsText(false);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseover', handleMouseOver);
+
+    // Lerp animation loop
+    let animationFrameId: number;
+    const render = () => {
+      // Lerp factor (lower = smoother/slower)
+      const lerpFactor = 0.15;
+      
+      cursorPos.current.x += (mousePos.current.x - cursorPos.current.x) * lerpFactor;
+      cursorPos.current.y += (mousePos.current.y - cursorPos.current.y) * lerpFactor;
+
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate3d(${cursorPos.current.x}px, ${cursorPos.current.y}px, 0) translate(-50%, -50%)`;
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+    render();
 
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseover', handleMouseOver);
+      cancelAnimationFrame(animationFrameId);
+      document.body.style.cursor = 'auto';
     };
   }, []);
 
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+  // Don't render on touch devices
+  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
     return null;
   }
 
   return (
-    <div className={`pointer-events-none fixed inset-0 z-[9999] transition-opacity duration-300 ${hovered ? 'cursor-hover' : ''} ${isText ? 'cursor-text' : ''}`}>
+    <>
+      {/* Dot - follows instantly */}
       <div 
-        className="cursor-dot" 
-        style={{ left: `${position.x}px`, top: `${position.y}px`, opacity: hovered ? 0 : 1 }}
+        ref={dotRef}
+        className="fixed top-0 left-0 w-2 h-2 bg-white rounded-full pointer-events-none z-[10000] mix-blend-difference will-change-transform"
+        style={{ opacity: isView ? 0 : 1 }}
       />
+      
+      {/* Outline - follows with lerp */}
       <div 
-        className="cursor-outline" 
-        style={{ 
-          left: `${position.x}px`, 
-          top: `${position.y}px`,
-          transform: `translate(-50%, -50%) scale(${clicked ? 0.8 : 1})`,
-          transition: 'transform 0.1s, width 0.2s, height 0.2s, background-color 0.2s'
-        }}
-      />
-    </div>
+        ref={cursorRef}
+        className={`fixed top-0 left-0 rounded-full pointer-events-none z-[9999] mix-blend-difference flex items-center justify-center will-change-transform transition-[width,height,background-color] duration-300 ease-out ${
+          isView 
+            ? 'w-24 h-24 bg-white text-black' 
+            : isHovering 
+              ? 'w-16 h-16 bg-white/20 border border-white' 
+              : isText 
+                ? 'w-1 h-8 bg-white rounded-sm' 
+                : 'w-10 h-10 border border-white'
+        }`}
+      >
+        {isView && <span className="text-xs font-display font-bold tracking-widest">VIEW</span>}
+      </div>
+    </>
   );
 };

@@ -52,12 +52,12 @@ export const Technologies = () => {
 
               <div className="relative z-10 text-center max-w-4xl">
                 <h3 
-                  className="text-6xl md:text-8xl font-display font-black tracking-tighter mb-8 uppercase"
+                  className="text-fluid-h2 font-display font-black tracking-tighter mb-8 uppercase blend-diff"
                   style={{ color: panel.color, textShadow: `0 0 20px ${panel.color}` }}
                 >
                   {panel.title}
                 </h3>
-                <p className="text-2xl md:text-4xl font-sans font-light text-white/80 leading-relaxed">
+                <p className="text-fluid-h3 font-sans font-light text-white/80 leading-relaxed">
                   {panel.desc}
                 </p>
               </div>
@@ -106,7 +106,14 @@ export const Technologies = () => {
           {panels.map((_, i) => (
             <div 
               key={i} 
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${Math.round(scrollProgress * 4) === i ? 'bg-white scale-150 shadow-[0_0_10px_white]' : 'bg-white/30'}`}
+              className={`interactive w-3 h-3 rounded-full transition-all duration-300 ${Math.round(scrollProgress * 4) === i ? 'bg-white scale-150 shadow-[0_0_10px_white]' : 'bg-white/30 hover:bg-white/50 cursor-pointer'}`}
+              onClick={() => {
+                if (containerRef.current) {
+                  const windowHeight = window.innerHeight;
+                  const targetScroll = containerRef.current.offsetTop + (i * windowHeight);
+                  window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                }
+              }}
             ></div>
           ))}
         </div>

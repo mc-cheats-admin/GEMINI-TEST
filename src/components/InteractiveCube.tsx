@@ -86,17 +86,17 @@ export const InteractiveCube = () => {
       <div className="container mx-auto px-6 relative z-10 flex flex-col items-center">
         
         <div className="text-center mb-20">
-          <h2 className={`text-4xl md:text-6xl font-display font-bold tracking-widest mb-6 transition-all duration-1000 ${hasIntersected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+          <h2 className={`text-fluid-h2 font-display font-bold tracking-widest mb-6 transition-all duration-1000 ${hasIntersected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
             ЯДРО
             <div className="h-1 w-24 bg-gradient-to-r from-[var(--color-neon-gold)] to-[var(--color-neon-pink)] mx-auto mt-4 rounded-full"></div>
           </h2>
-          <p className="text-white/70 font-sans font-light max-w-2xl mx-auto">
+          <p className="text-fluid-p text-white/70 font-sans font-light max-w-2xl mx-auto">
             Вращайте куб, чтобы изучить фундаментальные принципы нашей цифровой вселенной.
           </p>
         </div>
 
         <div 
-          className={`scene transition-all duration-1000 delay-300 ${hasIntersected ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}
+          className={`scene interactive transition-all duration-1000 delay-300 ${hasIntersected ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}
           onMouseDown={handleMouseDown}
           onTouchStart={handleMouseDown}
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}

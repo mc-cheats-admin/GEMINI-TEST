@@ -4,14 +4,16 @@ export function useIntersectionObserver(options = {}) {
   const [isIntersecting, setIsIntersecting] = useState(false);
   const [hasIntersected, setHasIntersected] = useState(false);
   const ref = useRef<HTMLElement | null>(null);
+  const optionsStr = JSON.stringify(options);
 
   useEffect(() => {
+    const parsedOptions = JSON.parse(optionsStr);
     const observer = new IntersectionObserver(([entry]) => {
       setIsIntersecting(entry.isIntersecting);
       if (entry.isIntersecting) {
         setHasIntersected(true);
       }
-    }, { threshold: 0.1, ...options });
+    }, { threshold: 0.1, ...parsedOptions });
 
     if (ref.current) {
       observer.observe(ref.current);
@@ -22,7 +24,7 @@ export function useIntersectionObserver(options = {}) {
         observer.unobserve(ref.current);
       }
     };
-  }, [options]);
+  }, [optionsStr]);
 
   return { ref, isIntersecting, hasIntersected };
 }

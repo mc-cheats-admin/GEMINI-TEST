@@ -29,10 +29,8 @@ export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
     return () => clearInterval(interval);
   }, [onComplete]);
 
-  if (isComplete) return null;
-
   return (
-    <div className={`fixed inset-0 z-[10000] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ${isComplete ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`fixed inset-0 z-[10000] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ${isComplete ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div className="relative w-32 h-32 mb-8">
         <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-[var(--color-neon-blue)] animate-spin" style={{ animationDuration: '2s' }}></div>
         <div className="absolute inset-2 rounded-full border-b-2 border-l-2 border-[var(--color-neon-pink)] animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }}></div>

@@ -52,7 +52,8 @@ export const CanvasBackground = ({ theme }: { theme: string }) => {
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      particles = Array.from({ length: Math.floor(window.innerWidth / 10) }, () => new Particle(canvas.width, canvas.height));
+      const particleCount = Math.min(Math.floor(window.innerWidth / 10), 150);
+      particles = Array.from({ length: particleCount }, () => new Particle(canvas.width, canvas.height));
     };
 
     window.addEventListener('resize', resize);

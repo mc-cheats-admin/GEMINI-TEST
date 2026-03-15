@@ -27,10 +27,10 @@ export const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center md:items-start mb-16">
           
           <div className="mb-10 md:mb-0 text-center md:text-left">
-            <div className="font-display text-4xl font-black tracking-widest text-white mb-4 glitch-effect" style={{ animationDuration: '5s' }}>
+            <div className="text-fluid-h2 font-display font-black tracking-widest text-white mb-4 glitch-effect" style={{ animationDuration: '5s' }}>
               UNIVERSE
             </div>
-            <p className="text-white/50 font-sans font-light max-w-xs">
+            <p className="text-fluid-p text-white/50 font-sans font-light max-w-xs">
               Исследуйте границы возможного вместе с нами.
             </p>
           </div>
@@ -41,7 +41,7 @@ export const Footer = () => {
               <ul className="space-y-4">
                 {['Главная', 'Возможности', 'Технологии', 'Галерея'].map(link => (
                   <li key={link}>
-                    <a href={`#${link.toLowerCase()}`} className="text-white/70 hover:text-[var(--color-neon-blue)] font-sans transition-colors relative group">
+                    <a href={`#${link.toLowerCase()}`} className="interactive text-white/70 hover:text-[var(--color-neon-blue)] font-sans transition-colors relative group">
                       {link}
                       <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[var(--color-neon-blue)] transition-all duration-300 group-hover:w-full"></span>
                     </a>
@@ -55,7 +55,7 @@ export const Footer = () => {
               <ul className="space-y-4">
                 {['Политика конфиденциальности', 'Условия использования', 'Cookies'].map(link => (
                   <li key={link}>
-                    <a href="#" className="text-white/70 hover:text-[var(--color-neon-pink)] font-sans transition-colors relative group">
+                    <a href="#" className="interactive text-white/70 hover:text-[var(--color-neon-pink)] font-sans transition-colors relative group">
                       {link}
                       <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[var(--color-neon-pink)] transition-all duration-300 group-hover:w-full"></span>
                     </a>
@@ -81,7 +81,7 @@ export const Footer = () => {
       {/* Scroll to top button */}
       <button 
         onClick={scrollToTop}
-        className="fixed bottom-8 right-8 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-[var(--color-neon-blue)] hover:text-black hover:shadow-[0_0_20px_var(--color-neon-blue)] transition-all duration-300 z-50 group"
+        className="interactive fixed bottom-8 right-8 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-[var(--color-neon-blue)] hover:text-black hover:shadow-[0_0_20px_var(--color-neon-blue)] transition-all duration-300 z-50 group"
       >
         <ArrowUp className="group-hover:-translate-y-1 transition-transform" />
       </button>
