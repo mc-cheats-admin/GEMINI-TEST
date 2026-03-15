@@ -11,48 +11,59 @@ export const VelocityMarquee: React.FC<VelocityMarqueeProps> = ({ text }) => {
   const textRef2 = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
   const directionRef = useRef(1);
+  const textWidthRef = useRef(0);
 
   useEffect(() => {
+    if (!textRef1.current || !textRef2.current) return;
+
+    // Измеряем ширину текста один раз
+    textWidthRef.current = textRef1.current.offsetWidth;
+    
+    // Устанавливаем начальные позиции
+    positionRef.current = 0;
+    textRef2.current.style.transform = `translateX(${textWidthRef.current}px)`;
+
     let rafId: number;
 
     const animate = () => {
-      if (!textRef1.current || !textRef2.current) return;
+      if (!textRef1.current || !textRef2.current || textWidthRef.current === 0) return;
 
       const scrollVel = state.scrollVelocity || 0;
       const absVel = Math.abs(scrollVel);
       
-      // Определяем направление на основе знака scrollVelocity
+      // Определяем направление
       if (scrollVel < -0.5) {
-        directionRef.current = -1; // Скролл вверх - текст вправо
+        directionRef.current = -1;
       } else if (scrollVel > 0.5) {
-        directionRef.current = 1; // Скролл вниз - текст влево
+        directionRef.current = 1;
       }
 
-      // Базовая скорость + бонус от скорости скролла
-      const baseSpeed = 0.3;
+      // Скорость движения
+      const baseSpeed = 0.5;
       const velocityMultiplier = Math.min(absVel * 2, 5);
       const speed = (baseSpeed + velocityMultiplier) * directionRef.current;
 
       positionRef.current += speed;
 
-      // Получаем ширину одного текстового блока
-      const textWidth = textRef1.current.offsetWidth;
-
       // Сброс позиции для бесконечного цикла
-      if (directionRef.current > 0 && positionRef.current <= -textWidth) {
+      if (positionRef.current <= -textWidthRef.current) {
         positionRef.current = 0;
-      } else if (directionRef.current < 0 && positionRef.current >= 0) {
-        positionRef.current = -textWidth;
+      } else if (positionRef.current >= textWidthRef.current) {
+        positionRef.current = 0;
       }
 
       // Применяем трансформацию
       textRef1.current.style.transform = `translateX(${positionRef.current}px)`;
-      textRef2.current.style.transform = `translateX(${positionRef.current + textWidth}px)`;
+      textRef2.current.style.transform = `translateX(${positionRef.current + textWidthRef.current}px)`;
 
       rafId = requestAnimationFrame(animate);
     };
 
-    animate();
+    // Небольшая задержка для корректного измерения
+    setTimeout(() => {
+      textWidthRef.current = textRef1.current?.offsetWidth || 0;
+      animate();
+    }, 100);
 
     return () => {
       cancelAnimationFrame(rafId);
@@ -78,7 +89,6 @@ export const VelocityMarquee: React.FC<VelocityMarqueeProps> = ({ text }) => {
             fontFamily: 'var(--font-display)',
             WebkitTextStroke: '2px rgba(255, 255, 255, 0.8)',
             WebkitTextFillColor: 'transparent',
-            textStroke: '2px rgba(255, 255, 255, 0.8)',
             color: 'transparent',
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',
@@ -101,7 +111,6 @@ export const VelocityMarquee: React.FC<VelocityMarqueeProps> = ({ text }) => {
             fontFamily: 'var(--font-display)',
             WebkitTextStroke: '2px rgba(255, 255, 255, 0.8)',
             WebkitTextFillColor: 'transparent',
-            textStroke: '2px rgba(255, 255, 255, 0.8)',
             color: 'transparent',
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',

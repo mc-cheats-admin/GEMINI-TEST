@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { state } from './store';
 import { WebGLBackground } from './components/WebGLBackground';
-import { AudioManager } from './components/AudioManager';
 import { ScrollEngine } from './components/ScrollEngine';
 import { CustomContextMenu } from './components/CustomContextMenu';
 import { ScrollProgressBar } from './components/ScrollProgressBar';
@@ -24,16 +23,16 @@ import { LiveFAQ } from './components/LiveFAQ';
 export default function App() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollEngineRef = useRef<any>(null);
-  const audioManagerRef = useRef<any>(null);
   const lastTimeRef = useRef<number>(performance.now());
 
   useEffect(() => {
-    // Initialize Audio Manager
-    audioManagerRef.current = new AudioManager();
-
     // Initialize Scroll Engine
     if (scrollRef.current) {
-      scrollEngineRef.current = new ScrollEngine(scrollRef.current);
+      try {
+        scrollEngineRef.current = new ScrollEngine(scrollRef.current);
+      } catch (error) {
+        console.error('ScrollEngine initialization failed:', error);
+      }
     }
 
     const handleResize = () => {
@@ -66,7 +65,11 @@ export default function App() {
 
       // Update scroll engine
       if (scrollEngineRef.current) {
-        scrollEngineRef.current.update(deltaTime);
+        try {
+          scrollEngineRef.current.update(deltaTime);
+        } catch (error) {
+          console.error('ScrollEngine update failed:', error);
+        }
       }
 
       // Update mouse lerp
@@ -88,10 +91,11 @@ export default function App() {
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(rafId);
       if (scrollEngineRef.current) {
-        scrollEngineRef.current.destroy();
-      }
-      if (audioManagerRef.current) {
-        audioManagerRef.current.destroy();
+        try {
+          scrollEngineRef.current.destroy();
+        } catch (error) {
+          console.error('ScrollEngine destroy failed:', error);
+        }
       }
     };
   }, []);

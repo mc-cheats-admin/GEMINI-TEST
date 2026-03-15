@@ -1,11 +1,15 @@
 import { state } from '../store';
 
-class AudioManager {
+export class AudioManager {
   private context: AudioContext | null = null;
   private masterGain: GainNode | null = null;
 
+  constructor() {
+    this.init();
+  }
+
   init() {
-    if (state.audio.context) return;
+    if (this.context) return;
 
     try {
       this.context = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -75,6 +79,16 @@ class AudioManager {
         state.audio.enabled ? 0.15 : 0,
         this.context.currentTime
       );
+    }
+  }
+
+  destroy() {
+    if (this.context) {
+      this.context.close();
+      this.context = null;
+      this.masterGain = null;
+      state.audio.context = null;
+      state.audio.enabled = false;
     }
   }
 }

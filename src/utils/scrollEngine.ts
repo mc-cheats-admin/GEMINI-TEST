@@ -1,6 +1,6 @@
 import { state } from '../store';
 
-export class ScrollEngine {
+class ScrollEngineClass {
   private container: HTMLElement | null = null;
   private rafId: number = 0;
   private resizeObserver: ResizeObserver | null = null;
@@ -71,11 +71,11 @@ export class ScrollEngine {
     }
   }
 
-  private update() {
+  update(deltaTime?: number) {
     const currentTime = performance.now();
-    const deltaTime = (currentTime - this.lastTime) / 1000;
+    const dt = deltaTime || (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
-    state.deltaTime = deltaTime;
+    state.deltaTime = dt;
 
     const prevScrollY = state.scroll.y;
     state.scroll.y += (state.scroll.target - state.scroll.y) * 0.08;
@@ -88,8 +88,6 @@ export class ScrollEngine {
       const clampedSkew = Math.max(-5, Math.min(5, skew));
       this.container.style.transform = `translate3d(0, -${state.scroll.y}px, 0) skewY(${clampedSkew}deg)`;
     }
-
-    this.rafId = requestAnimationFrame(this.update);
   }
 
   start() {
@@ -156,4 +154,5 @@ export class ScrollEngine {
   }
 }
 
-export const scrollEngine = new ScrollEngine();
+export const scrollEngine = new ScrollEngineClass();
+export { ScrollEngineClass as ScrollEngine };
