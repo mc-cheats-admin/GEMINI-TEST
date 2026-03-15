@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { state } from './store';
 import { WebGLBackground } from './components/WebGLBackground';
-import { ScrollEngine } from './components/ScrollEngine';
+import { ScrollEngine } from './utils/scrollEngine';
 import { CustomContextMenu } from './components/CustomContextMenu';
 import { ScrollProgressBar } from './components/ScrollProgressBar';
 import { Cursor } from './components/Cursor';
@@ -29,7 +29,8 @@ export default function App() {
     // Initialize Scroll Engine
     if (scrollRef.current) {
       try {
-        scrollEngineRef.current = new ScrollEngine(scrollRef.current);
+        scrollEngineRef.current = new ScrollEngine();
+        scrollEngineRef.current.init(scrollRef.current);
       } catch (error) {
         console.error('ScrollEngine initialization failed:', error);
       }

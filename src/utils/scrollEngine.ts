@@ -21,7 +21,7 @@ class ScrollEngineClass {
     this.setupResizeObserver();
     this.handleResize();
     this.lastTime = performance.now();
-    this.start();
+    // this.start();
   }
 
   private setupEventListeners() {
