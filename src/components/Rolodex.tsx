@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { state } from '../store';
+import { engine } from '../engine/Engine';
 
 const features = [
   { title: 'Нейро-интерфейсы', desc: 'Прямое подключение сознания к цифровой среде.' },
@@ -21,63 +22,74 @@ export const Rolodex = () => {
   })));
 
   useEffect(() => {
-    let rafId: number;
-    const update = () => {
+    let initialTop = 0;
+    let initialHeight = 0;
+
+    const updateRect = () => {
       if (!containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      const scrollY = state.scroll.y;
-      
-      // Вычисляем progress с учетом виртуального скролла
-      const sectionTop = containerRef.current.offsetTop;
-      const sectionHeight = containerRef.current.offsetHeight;
-      const viewportCenter = scrollY + window.innerHeight / 2;
-      
-      // Progress от -1 (выше экрана) до 1 (ниже экрана)
-      const progress = ((viewportCenter - sectionTop) / sectionHeight) * 2 - 1;
-      
-      // Ограничиваем progress для плавности
-      const clampedProgress = Math.max(-1, Math.min(1, progress));
-
-      cardsRef.current.forEach((card, i) => {
-        if (!card) return;
-        const ds = dragState.current[i];
-        
-        if (!ds.isDragging) {
-          ds.vx += (0 - ds.offsetX) * 0.05;
-          ds.vy += (0 - ds.offsetY) * 0.05;
-          ds.vx *= 0.9;
-          ds.vy *= 0.9;
-          
-          ds.offsetX += ds.vx;
-          ds.offsetY += ds.vy;
-        }
-
-        const offset = i - (features.length - 1) / 2;
-        
-        // Используем clampedProgress для расчета позиций
-        let z = -Math.abs(offset) * 200 + clampedProgress * 800;
-        let y = offset * 120 + clampedProgress * 400;
-        let rotateX = offset * -15 + clampedProgress * 20;
-        
-        const mouseXNorm = (state.mouse.x / window.innerWidth) * 2 - 1;
-        const rotateY = mouseXNorm * 15;
-
-        const finalX = ds.offsetX;
-        const finalY = y + ds.offsetY;
-
-        card.style.transform = `translate3d(${finalX}px, ${finalY}px, ${z}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-        
-        // Улучшенная логика видимости - карточки не пропадают резко
-        const opacity = z > 400 ? Math.max(0, 1 - (z - 400) / 400) : 
-                       z < -1000 ? Math.max(0, 1 + (z + 1000) / 200) : 1;
-        card.style.opacity = String(opacity);
-      });
-
-      rafId = requestAnimationFrame(update);
+      // Temporarily remove transform to get true offset if needed, or just use offsetTop
+      // Since container is inside #scroll-container, its offsetTop is relative to it.
+      // Actually, we can just use the element's offsetTop relative to the document.
+      let el: HTMLElement | null = containerRef.current;
+      let top = 0;
+      while (el && el.id !== 'scroll-container') {
+        top += el.offsetTop;
+        el = el.offsetParent as HTMLElement;
+      }
+      initialTop = top;
+      initialHeight = containerRef.current.offsetHeight;
     };
-    update();
-    return () => cancelAnimationFrame(rafId);
+
+    // Delay slightly to ensure layout is done
+    setTimeout(updateRect, 100);
+    window.addEventListener('resize', updateRect);
+
+    const module = {
+      update: () => {
+        if (!containerRef.current) return;
+        
+        // Calculate progress using state.scroll.y instead of getBoundingClientRect
+        const currentY = initialTop - state.scroll.y;
+        const centerY = currentY + initialHeight / 2;
+        const progress = (window.innerHeight / 2 - centerY) / window.innerHeight;
+
+        cardsRef.current.forEach((card, i) => {
+          if (!card) return;
+          const ds = dragState.current[i];
+          
+          if (!ds.isDragging) {
+            ds.vx += (0 - ds.offsetX) * 0.05;
+            ds.vy += (0 - ds.offsetY) * 0.05;
+            ds.vx *= 0.9;
+            ds.vy *= 0.9;
+            
+            ds.offsetX += ds.vx;
+            ds.offsetY += ds.vy;
+          }
+
+          const offset = i - (features.length - 1) / 2;
+          
+          let z = -Math.abs(offset) * 200 + progress * 800;
+          let y = offset * 120 + progress * 400;
+          let rotateX = offset * -15 + progress * 20;
+          
+          const mouseXNorm = (state.mouse.x / window.innerWidth) * 2 - 1;
+          const rotateY = mouseXNorm * 15;
+
+          const finalX = ds.offsetX;
+          const finalY = y + ds.offsetY;
+
+          card.style.transform = `translate3d(${finalX}px, ${finalY}px, ${z}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+          card.style.opacity = z > 200 ? '0' : z < -800 ? '0' : '1';
+        });
+      }
+    };
+    engine.register(module);
+    
+    return () => {
+      engine.unregister(module);
+      window.removeEventListener('resize', updateRect);
+    };
   }, []);
 
   const handlePointerDown = (e: React.PointerEvent, index: number) => {
@@ -125,7 +137,7 @@ export const Rolodex = () => {
               onPointerMove={(e) => handlePointerMove(e, i)}
               onPointerUp={(e) => handlePointerUp(e, i)}
               onPointerCancel={(e) => handlePointerUp(e, i)}
-              className="absolute inset-0 glass-panel p-8 rounded-2xl flex flex-col justify-center items-center text-center will-change-transform cursor-grab active:cursor-grabbing"
+              className="absolute inset-0 bg-white/5 border border-white/10 p-8 rounded-2xl flex flex-col justify-center items-center text-center will-change-transform cursor-grab active:cursor-grabbing shadow-[0_0_30px_rgba(255,255,255,0.05)]"
               style={{ transformOrigin: 'center center -500px', touchAction: 'none' }}
             >
               <h3 className="text-2xl font-display font-bold text-white mb-4 pointer-events-none">{f.title}</h3>

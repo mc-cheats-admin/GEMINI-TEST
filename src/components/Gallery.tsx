@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { AudioManager } from '../utils/audio';
+import React, { useState } from 'react';
 
 const projects = [
   { id: 1, img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop' },
@@ -11,34 +10,20 @@ const projects = [
 export const Gallery = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedImg, setSelectedImg] = useState('');
-  const audioManagerRef = useRef<AudioManager | null>(null);
-
-  useEffect(() => {
-    audioManagerRef.current = new AudioManager();
-    return () => {
-      if (audioManagerRef.current) {
-        audioManagerRef.current.destroy();
-      }
-    };
-  }, []);
 
   const openModal = (img: string) => {
     setSelectedImg(img);
     setModalOpen(true);
-    document.body.classList.add('page-tear');
-    
-    if (audioManagerRef.current) {
-      audioManagerRef.current.playHoverSound();
-    }
+    document.getElementById('scroll-container')?.classList.add('page-tear');
   };
 
   const closeModal = () => {
     setModalOpen(false);
-    document.body.classList.remove('page-tear');
+    document.getElementById('scroll-container')?.classList.remove('page-tear');
   };
 
   return (
-    <section className="py-32 min-h-screen relative z-10">
+    <section className="py-16 min-h-screen relative z-10">
       <div className="container mx-auto px-6">
         <h2 className="text-5xl font-display font-bold mb-16 text-center">ПРОЕКТЫ</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

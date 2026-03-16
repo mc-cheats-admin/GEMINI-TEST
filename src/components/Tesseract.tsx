@@ -1,66 +1,46 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { state } from '../store';
-import { AudioManager } from '../utils/audio';
+import { engine } from '../engine/Engine';
 
 export const Tesseract = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const shardsRef = useRef<HTMLDivElement[]>([]);
-  const audioManagerRef = useRef<AudioManager | null>(null);
-  const prevHoveredRef = useRef<boolean>(false);
 
   useEffect(() => {
-    audioManagerRef.current = new AudioManager();
-
-    return () => {
-      if (audioManagerRef.current) {
-        audioManagerRef.current.destroy();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    let rafId: number;
     let time = 0;
     
-    const update = () => {
-      time += 0.01;
-      
-      shardsRef.current.forEach((shard, i) => {
-        if (!shard) return;
+    const module = {
+      update: (dt: number) => {
+        time += dt * 0.01;
         
-        const angle = (i / 20) * Math.PI * 2;
-        const radius = isHovered ? 300 : 50 + Math.sin(time + i) * 10;
-        
-        const x = Math.sin(angle) * radius;
-        const y = Math.cos(angle) * radius;
-        const z = Math.sin(time * 2 + i) * radius;
-        
-        const rotX = time * 50 + i * 20;
-        const rotY = time * 30 + i * 10;
+        shardsRef.current.forEach((shard, i) => {
+          if (!shard) return;
+          
+          const angle = (i / 20) * Math.PI * 2;
+          const radius = isHovered ? 300 : 50 + Math.sin(time + i) * 10;
+          
+          const x = Math.sin(angle) * radius;
+          const y = Math.cos(angle) * radius;
+          const z = Math.sin(time * 2 + i) * radius;
+          
+          const rotX = time * 50 + i * 20;
+          const rotY = time * 30 + i * 10;
 
-        shard.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-        
-        if (isHovered) {
-          shard.style.opacity = '0.2';
-          shard.style.backgroundColor = 'var(--color-neon-pink)';
-        } else {
-          shard.style.opacity = '0.8';
-          shard.style.backgroundColor = 'var(--color-neon-blue)';
-        }
-      });
-
-      rafId = requestAnimationFrame(update);
+          shard.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+          
+          if (isHovered) {
+            shard.style.opacity = '0.2';
+            shard.style.backgroundColor = 'var(--color-neon-pink)';
+          } else {
+            shard.style.opacity = '0.8';
+            shard.style.backgroundColor = 'var(--color-neon-blue)';
+          }
+        });
+      }
     };
-    update();
-    return () => cancelAnimationFrame(rafId);
-  }, [isHovered]);
-
-  useEffect(() => {
-    if (isHovered && !prevHoveredRef.current && audioManagerRef.current) {
-      audioManagerRef.current.playHoverSound();
-    }
-    prevHoveredRef.current = isHovered;
+    engine.register(module);
+    return () => engine.unregister(module);
   }, [isHovered]);
 
   return (
@@ -78,10 +58,9 @@ export const Tesseract = () => {
           <div 
             key={i}
             ref={el => shardsRef.current[i] = el!}
-            className="absolute w-12 h-12 transition-all duration-1000 ease-out"
+            className="absolute w-12 h-12 transition-all duration-1000 ease-out mix-blend-screen"
             style={{ 
-              clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-              backdropFilter: 'blur(5px)'
+              clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
             }}
           ></div>
         ))}

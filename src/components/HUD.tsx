@@ -2,23 +2,13 @@ import React, { useEffect, useState } from 'react';
 
 export const HUD = () => {
   const [time, setTime] = useState('');
-  const [cpu, setCpu] = useState(12);
-  const [mem, setMem] = useState('0x8F3A2B');
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${Math.floor(now.getMilliseconds() / 10).toString().padStart(2, '0')}`);
     };
-    const interval = setInterval(() => {
-      updateTime();
-      if (Math.random() > 0.8) {
-        setCpu(prev => Math.max(5, Math.min(95, prev + (Math.random() - 0.5) * 10)));
-      }
-      if (Math.random() > 0.95) {
-        setMem('0x' + Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0'));
-      }
-    }, 50);
+    const interval = setInterval(updateTime, 50);
     return () => clearInterval(interval);
   }, []);
 
@@ -42,8 +32,8 @@ export const HUD = () => {
 
       {/* Bottom Info */}
       <div className="absolute bottom-6 left-24 font-mono text-[10px] text-white/50 tracking-widest">
-        MEM: {mem} <br/>
-        CPU: {Math.floor(cpu)}%
+        MEM: 0x8F3A2B <br/>
+        CPU: 12%
       </div>
       <div className="absolute bottom-6 right-24 font-mono text-[10px] text-white/50 tracking-widest text-right">
         SCROLL VELOCITY: AUTO <br/>

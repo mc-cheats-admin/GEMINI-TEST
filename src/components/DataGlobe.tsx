@@ -1,248 +1,151 @@
 import React, { useEffect, useRef } from 'react';
+import { engine } from '../engine/Engine';
 import { state } from '../store';
 
-interface Point3D {
-  x: number;
-  y: number;
-  z: number;
-  originalX: number;
-  originalY: number;
-  originalZ: number;
-  vx: number;
-  vy: number;
-  vz: number;
-}
-
-export const DataGlobe: React.FC = () => {
+export const DataGlobe = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const pointsRef = useRef<Point3D[]>([]);
-  const rotationRef = useRef({ x: 0, y: 0 });
-  const isVisibleRef = useRef(false);
-  const isHoveringRef = useRef(false);
+  const mouseRef = useRef({ x: 0, y: 0, isHovering: false });
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const POINT_COUNT = 2000;
-    const RADIUS = 200;
-    const ROTATION_SPEED = 0.0005;
-    const GRAVITY_STRENGTH = 0.3;
-    const RETURN_FORCE = 0.05;
-    const DAMPING = 0.95;
-
-    // Generate sphere points using Fibonacci sphere algorithm
-    const generateSphere = () => {
-      const points: Point3D[] = [];
-      const phi = Math.PI * (3 - Math.sqrt(5));
-
-      for (let i = 0; i < POINT_COUNT; i++) {
-        const y = 1 - (i / (POINT_COUNT - 1)) * 2;
-        const radiusAtY = Math.sqrt(1 - y * y);
-        const theta = phi * i;
-
-        const x = Math.cos(theta) * radiusAtY;
-        const z = Math.sin(theta) * radiusAtY;
-
-        points.push({
-          x: x * RADIUS,
-          y: y * RADIUS,
-          z: z * RADIUS,
-          originalX: x * RADIUS,
-          originalY: y * RADIUS,
-          originalZ: z * RADIUS,
-          vx: 0,
-          vy: 0,
-          vz: 0
-        });
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    
+    let width = 0;
+    let height = 0;
+    const points: { x: number, y: number, z: number, ox: number, oy: number, oz: number, vx: number, vy: number, vz: number }[] = [];
+    
+    const initPoints = () => {
+      points.length = 0;
+      const numPoints = 1000;
+      const radius = Math.min(width, height) * 0.3;
+      
+      for (let i = 0; i < numPoints; i++) {
+        const phi = Math.acos(-1 + (2 * i) / numPoints);
+        const theta = Math.sqrt(numPoints * Math.PI) * phi;
+        
+        const x = radius * Math.cos(theta) * Math.sin(phi);
+        const y = radius * Math.sin(theta) * Math.sin(phi);
+        const z = radius * Math.cos(phi);
+        
+        points.push({ x, y, z, ox: x, oy: y, oz: z, vx: 0, vy: 0, vz: 0 });
       }
-
-      return points;
     };
 
-    pointsRef.current = generateSphere();
+    let initialTop = 0;
+    const updateRect = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      canvas.width = width;
+      canvas.height = height;
+      initPoints();
 
-    const resize = () => {
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      let el: HTMLElement | null = parent;
+      let top = 0;
+      while (el && el.id !== 'scroll-container') {
+        top += el.offsetTop;
+        el = el.offsetParent as HTMLElement;
+      }
+      initialTop = top;
     };
+    updateRect();
+    const ro = new ResizeObserver(updateRect);
+    ro.observe(canvas.parentElement!);
 
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Intersection Observer
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          isVisibleRef.current = entry.isIntersecting;
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    observer.observe(container);
-
-    // Mouse hover detection
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      isHoveringRef.current = 
-        mouseX >= 0 && mouseX <= rect.width && 
-        mouseY >= 0 && mouseY <= rect.height;
+      mouseRef.current.x = e.clientX - rect.left - width / 2;
+      mouseRef.current.y = e.clientY - rect.top - height / 2;
     };
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseenter', () => mouseRef.current.isHovering = true);
+    canvas.addEventListener('mouseleave', () => mouseRef.current.isHovering = false);
 
-    window.addEventListener('mousemove', handleMouseMove);
+    let time = 0;
+    const module = {
+      update: (dt: number) => {
+        const currentY = initialTop - state.scroll.y;
+        if (currentY > window.innerHeight || currentY < -height) return;
 
-    // Render loop
-    let animationId: number;
-    const render = () => {
-      if (!isVisibleRef.current) {
-        animationId = requestAnimationFrame(render);
-        return;
-      }
-
-      const width = canvas.width;
-      const height = canvas.height;
-      const centerX = width / 2;
-      const centerY = height / 2;
-
-      ctx.fillStyle = 'rgba(5, 5, 5, 0.1)';
-      ctx.fillRect(0, 0, width, height);
-
-      // Auto rotation
-      rotationRef.current.y += ROTATION_SPEED * 60 * state.deltaTime;
-
-      const cosY = Math.cos(rotationRef.current.y);
-      const sinY = Math.sin(rotationRef.current.y);
-      const cosX = Math.cos(rotationRef.current.x);
-      const sinX = Math.sin(rotationRef.current.x);
-
-      // Get mouse position relative to canvas
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = state.mouse.x - rect.left;
-      const mouseY = state.mouse.y - rect.top;
-
-      // Sort points by Z for proper depth rendering
-      const projectedPoints = pointsRef.current.map((point) => {
-        // Apply gravity to cursor if hovering
-        if (isHoveringRef.current) {
-          const dx = mouseX - centerX;
-          const dy = mouseY - centerY;
-          
-          // Project point to 2D first to calculate distance
-          let rotatedX = point.x * cosY - point.z * sinY;
-          let rotatedZ = point.x * sinY + point.z * cosY;
-          let rotatedY = point.y * cosX - rotatedZ * sinX;
-          
-          const screenX = centerX + rotatedX;
-          const screenY = centerY + rotatedY;
-          
-          const distX = dx - (screenX - centerX);
-          const distY = dy - (screenY - centerY);
-          const distance = Math.sqrt(distX * distX + distY * distY);
-          
-          if (distance < 150) {
-            const force = (1 - distance / 150) * GRAVITY_STRENGTH;
-            point.vx += distX * force * 0.01;
-            point.vy += distY * force * 0.01;
-          }
-        }
-
-        // Return force to original position
-        point.vx += (point.originalX - point.x) * RETURN_FORCE;
-        point.vy += (point.originalY - point.y) * RETURN_FORCE;
-        point.vz += (point.originalZ - point.z) * RETURN_FORCE;
-
-        // Apply velocity
-        point.x += point.vx;
-        point.y += point.vy;
-        point.z += point.vz;
-
-        // Damping
-        point.vx *= DAMPING;
-        point.vy *= DAMPING;
-        point.vz *= DAMPING;
-
-        // Rotate around Y axis
-        let rotatedX = point.x * cosY - point.z * sinY;
-        let rotatedZ = point.x * sinY + point.z * cosY;
-
-        // Rotate around X axis
-        let rotatedY = point.y * cosX - rotatedZ * sinX;
-        rotatedZ = point.y * sinX + rotatedZ * cosX;
-
-        // Perspective projection
-        const perspective = 600;
-        const scale = perspective / (perspective + rotatedZ);
-        const x2d = centerX + rotatedX * scale;
-        const y2d = centerY + rotatedY * scale;
-
-        return { x: x2d, y: y2d, z: rotatedZ, scale };
-      });
-
-      projectedPoints.sort((a, b) => a.z - b.z);
-
-      // Draw points
-      projectedPoints.forEach(({ x, y, z, scale }) => {
-        const size = Math.max(1, 2 * scale);
-        const brightness = Math.max(0.2, Math.min(1, (z + RADIUS) / (RADIUS * 2)));
+        time += dt * 0.001;
+        ctx.clearRect(0, 0, width, height);
         
-        ctx.fillStyle = `rgba(0, 243, 255, ${brightness * 0.8})`;
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
+        const cx = width / 2;
+        const cy = height / 2;
+        
+        const rotX = time * 0.2;
+        const rotY = time * 0.3;
 
-        // Glow effect for closer points
-        if (brightness > 0.7) {
-          ctx.fillStyle = `rgba(0, 243, 255, ${(brightness - 0.7) * 0.3})`;
-          ctx.beginPath();
-          ctx.arc(x, y, size * 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
+        const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+        const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
 
-      animationId = requestAnimationFrame(render);
+        ctx.fillStyle = 'rgba(0, 243, 255, 0.8)';
+
+        points.forEach(p => {
+          // Gravity to mouse
+          if (mouseRef.current.isHovering) {
+            const dx = mouseRef.current.x - p.x;
+            const dy = mouseRef.current.y - p.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 150) {
+              p.vx += (dx / dist) * 0.5;
+              p.vy += (dy / dist) * 0.5;
+            }
+          }
+          
+          // Spring back
+          p.vx += (p.ox - p.x) * 0.05;
+          p.vy += (p.oy - p.y) * 0.05;
+          p.vz += (p.oz - p.z) * 0.05;
+          
+          p.vx *= 0.9;
+          p.vy *= 0.9;
+          p.vz *= 0.9;
+          
+          p.x += p.vx;
+          p.y += p.vy;
+          p.z += p.vz;
+
+          // Rotate
+          const x1 = p.x * cosY - p.z * sinY;
+          const z1 = p.z * cosY + p.x * sinY;
+          const y2 = p.y * cosX - z1 * sinX;
+          const z2 = z1 * cosX + p.y * sinX;
+
+          const scale = 400 / (400 + z2);
+          const px = cx + x1 * scale;
+          const py = cy + y2 * scale;
+
+          if (z2 > -200) {
+            ctx.beginPath();
+            ctx.arc(px, py, 1.5 * scale, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
     };
-
-    render();
-
+    engine.register(module);
+    
     return () => {
-      cancelAnimationFrame(animationId);
-      observer.disconnect();
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMouseMove);
+      engine.unregister(module);
+      ro.disconnect();
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseenter', () => mouseRef.current.isHovering = true);
+      canvas.removeEventListener('mouseleave', () => mouseRef.current.isHovering = false);
     };
   }, []);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative w-full h-screen flex items-center justify-center overflow-hidden"
-      style={{ minHeight: '100dvh' }}
-    >
-      <div className="absolute inset-0 flex items-center justify-center">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full"
-          style={{ cursor: 'none' }}
-        />
+    <section className="h-screen relative flex items-center justify-center">
+      <div className="absolute inset-0 w-full h-full">
+        <canvas ref={canvasRef} className="w-full h-full" />
       </div>
-      
-      <div className="relative z-10 text-center pointer-events-none">
-        <h2 className="text-6xl md:text-8xl font-display liquid-metal-text mb-6">
-          Data Globe
-        </h2>
-        <p className="text-xl md:text-2xl text-white/60 font-sans max-w-2xl mx-auto px-4">
-          Интерактивная матрица данных. Наведите курсор, чтобы исказить гравитацию.
-        </p>
+      <div className="relative z-10 pointer-events-none text-center">
+        <h2 className="text-5xl font-display font-black text-white drop-shadow-[0_0_10px_rgba(0,243,255,0.3)]">DATA MATRIX</h2>
+        <p className="font-mono text-[var(--color-neon-blue)] mt-4 opacity-80">INTERACT TO DISRUPT</p>
       </div>
     </section>
   );
